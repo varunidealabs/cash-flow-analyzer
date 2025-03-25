@@ -50,7 +50,7 @@ if not st.session_state.file_processed:
     uploaded_file = st.file_uploader("Choose a PDF file", type=["pdf"])
     #dummy statement
 
-    if st.button("Test with dummy data"):
+    if st.button("Test with dummy data", key="test_dummy_data"):
         uploaded_file = "dummy_statement.pdf"
           
 
@@ -148,20 +148,46 @@ else:
         </div>
         """, unsafe_allow_html=True)
         
-        # Dashboard overview charts
+        # Dashboard overview charts - CORRECTLY INDENTED INSIDE TAB1
         st.subheader("Financial Insights Dashboard")
-        
+
         # Side-by-side charts
         col1, col2 = st.columns(2)
-        
+
         with col1:
             st.plotly_chart(analyzer.generate_monthly_cash_flow_chart(), use_container_width=True)
-        
+            
+            # Add explanation for the cash flow chart
+            st.markdown("""
+            <div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 14px;">
+                <p><strong>Cash Flow Explanation:</strong> This chart shows your monthly income (green) versus expenses (red). 
+                Wider gaps between green and red bars indicate months with higher savings potential.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
         with col2:
-            st.plotly_chart(analyzer.generate_spending_breakdown_chart(), use_container_width=True)
+            if analyzer and hasattr(analyzer, 'generate_spending_breakdown_chart'):
+                st.plotly_chart(analyzer.generate_spending_breakdown_chart(), use_container_width=True)
+            else:
+                st.warning("Spending breakdown chart could not be generated. Analyzer is not properly initialized.")
+            
+            # Add explanation for the pie chart
+            if analysis_results and 'summary' in analysis_results:
+                top_category = analysis_results['summary'].get('top_expense_category', 'N/A')
+                pie_total = analysis_results['summary'].get('total_expenses', 0.0)
+                
+                st.markdown(f"""
+                <div style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 14px;">
+                    <p><strong>Spending Breakdown:</strong> Your largest expense category is <strong>{top_category}</strong>, 
+                    taking up a significant portion of your total spending (₹{pie_total:,.2f}). 
+                    Categories with larger slices represent areas where budget adjustments could have the biggest impact.</p>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.warning("Spending breakdown data is unavailable. Please check the analysis results.")
 
     with tab2:
-        st.header(" Personalized Financial Insights")
+        st.header("Personalized Financial Insights")
         
         # Financial health score with gauge
         health_score = financial_insights.get('health_score', 50)
@@ -203,7 +229,7 @@ else:
         
         # Display savings tips
         st.markdown("""
-        <h3 style="margin-bottom: 15px; color: #0d6efd;"> Personalized Savings Tips</h3>
+        <h3 style="margin-bottom: 15px; color: #0d6efd;">Personalized Savings Tips</h3>
         """, unsafe_allow_html=True)
         
         tips = financial_insights.get('tips', [])
@@ -219,13 +245,10 @@ else:
         if custom_advice:
             st.markdown(f"""
             <div style="background-color: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 30px; border-left: 5px solid #ffc107;">
-                <h3 style="margin-top: 0; color: #856404;"> Custom Recommendation</h3>
+                <h3 style="margin-top: 0; color: #856404;">Custom Recommendation</h3>
                 <p style="font-size: 18px; line-height: 1.6;">{custom_advice}</p>
             </div>
             """, unsafe_allow_html=True)
-    
-    
-        
 
     with tab3:
         st.header("Transactions")
@@ -299,6 +322,7 @@ else:
             st.markdown(f"""
             <div style="background-color: #f0f8ff; padding: 10px; border-radius: 5px; border: 1px solid #d1e7dd;">
             <h4 style="color: #0d6efd; margin: 0;">Filtered Results Summary</h4>
+            <ul style="margin: 0; padding-left: 20px; font-size: 16px;
             <ul style="margin: 0; padding-left: 20px; font-size: 16px; color: #212529;">
                 <li><strong>Total Credits:</strong> ₹{filtered_df[filtered_df['amount'] > 0]['amount'].sum():,.2f}</li>
                 <li><strong>Total Debits:</strong> ₹{abs(filtered_df[filtered_df['amount'] < 0]['amount'].sum()):,.2f}</li>
